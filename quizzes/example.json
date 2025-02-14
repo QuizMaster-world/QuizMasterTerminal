@@ -1,0 +1,1 @@
+{"title": "example", "listOfQuestions": [{"question": "example", "correctAnswer": "example", "wrongAnswers": ["example", "example", "example"], "timeout": 15}, {"question": "hello", "correctAnswer": "hi", "wrongAnswers": ["bye", "goodbye", "bye bye"], "timeout": 10}]}
