@@ -1,6 +1,6 @@
 # QuizMasterTerminal
 
-QuizMasterTerminal is a text-based terminal version of [QuizMasterMini](https://github.com/hermonochy/QuizMasterMini). No external requirements are needed. QuizMasterTerminal allows users to create and play quizzes directly from the terminal. It is ideal for environments where graphical interfaces are not available or desired.
+QuizMasterTerminal is a text-based terminal version of [QuizMasterLite](https://github.com/hermonochy/QuizMasterLite). QuizMasterTerminal allows users to create and play quizzes directly from the terminal. It is ideal for environments where graphical interfaces are not available or desired.
 
 ## How to Use
 
@@ -15,8 +15,12 @@ QuizMasterTerminal is a text-based terminal version of [QuizMasterMini](https://
     ```sh
     cd QuizMasterTerminal
     ```
+ 3. Download fuzzywuzzy:
+    ```sh
+    pip install fuzzywuzzy
+    ```   
 
-3. Run either Quiz Creator or Quiz Game (see below).
+4. Run either Quiz Creator or Quiz Game (see below).
 
 ## Quiz Game
 
