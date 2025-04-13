@@ -51,7 +51,7 @@ def view_all_questions():
         sprint("\nNo questions available.")
         return
     for idx, question in enumerate(questionList):
-        sprint(f"\n{idx}. {question.question}")
+        sprint(f"\n{idx+1}. {question.question}")
 
 def main():
     sprint("\nQuiz Creator")
@@ -69,7 +69,7 @@ def main():
             break
         elif choice in ["1","open","open quiz","o","1. open quiz"]:
             searchTerm = input("Enter search term for quizzes: ").lower()
-            quizfiles = glob('./quizzes/**/*.json', recursive=True)
+            quizfiles = glob('./Quizzes/**/*.json', recursive=True)
             quizfileSearchResults = []
             for file in quizfiles:
                 if search_str_in_file(file, searchTerm):
@@ -101,7 +101,7 @@ def main():
                 sprint("Quiz loaded successfully.")
                 view_all_questions()
         elif choice in ["2","save","save quiz","s","2. save quiz"]:
-            filename = ("quizzes/" + input("Enter the filename to save the quiz (path to .json): "))
+            filename = ("Quizzes/" + input("Enter the filename to save the quiz (path to .json): "))
             with open(filename, 'w') as file:
                 quiz_name = input("Enter the title of the quiz: ")
                 savedData = {"title": quiz_name, "listOfQuestions": questionList}
@@ -115,7 +115,7 @@ def main():
             questionList.append(new_question)
             sprint("Question added successfully.")
         elif choice in ["4","edit","edit question","e","4. edit question"]:
-            index = int(input("Enter the index of the question to edit: "))
+            index = int(input("Enter the number of the question to edit: ")) - 1
             if 0 <= index < len(questionList):
                 question = input("Enter the new question: ")
                 correct_answer = input("Enter the new correct answer: ")

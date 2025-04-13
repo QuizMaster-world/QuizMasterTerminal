@@ -62,7 +62,7 @@ def main():
             os.system("python3 quizcreator.py")
         elif choice == "1" or choice == "play" or choice == "play a quiz" or choice == "1. play a quiz":
             searchTerm = input("Enter search term for quizzes: ").lower()
-            quizfiles = glob('./quizzes/**/*.json', recursive=True)
+            quizfiles = glob('./Quizzes/**/*.json', recursive=True)
             quizfileSearchResults = []
             for file in quizfiles:
                 if search_str_in_file(file, searchTerm):
@@ -76,9 +76,9 @@ def main():
             for idx, file in enumerate(quizfileSearchResults):
                 _, title = load_quiz(file)
                 sprint(f"{idx + 1}. {title}")
-
-            quiz_choice = int(input("Enter the number of the quiz you want to play: ")) - 1
-            if quiz_choice < 0 or quiz_choice >= len(quizfileSearchResults):
+            try:
+              quiz_choice = int(input("Enter the number of the quiz you want to play: ")) - 1
+            except ValueError:
                 sprint("Invalid choice.")
                 continue
 
@@ -96,13 +96,16 @@ def main():
                 sprint(f"\nQuestion: {current_question.question}")
                 for i, answer in enumerate(answers):
                     sprint(f"{i+1}. {answer}")
-                user_answer = input("Select the correct answer: ")
+                
+                while True:
+                    user_answer = input("Select the correct answer: ")
 
-                if user_answer.isdigit() and 1 <= int(user_answer) <= len(answers):
-                    if answers[int(user_answer) - 1] == correct_answer:
-                        score += 1
-                else:
-                    sprint("Invalid choice. Please select a valid answer.")
+                    if user_answer.isdigit() and 1 <= int(user_answer) <= len(answers):
+                        if answers[int(user_answer) - 1] == correct_answer:
+                            score += 1
+                        break
+                    else:
+                        sprint("Invalid choice. Please select a valid answer.")
 
                 question_index += 1
 
