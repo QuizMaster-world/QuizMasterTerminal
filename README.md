@@ -1,20 +1,20 @@
 # QuizMasterTerminal
 
-QuizMasterTerminal is a text-based terminal version of [QuizMasterLite](https://github.com/hermonochy/QuizMasterLite). QuizMasterTerminal allows users to create and play quizzes directly from the terminal. It is ideal for environments where graphical interfaces are not available or desired.
+QuizMasterTerminal is a text-based terminal version of [QuizMaster](https://github.com/hermonochy/QuizMaster). QuizMasterTerminal allows users to create and play quizzes directly from the terminal. It is ideal for environments where graphical interfaces are not available or desired.
 
 ## How to Use
 
 ### Installation
 
-1. Clone this repository:
-   ```sh
-   git clone https://github.com/hermonochy/QuizMasterTerminal
-   ```
+1. Clone this repository via terminal: ```git clone --recurse-submodules https://github.com/hermonochy/QuizMaster```
+
+  If you prefer not to include the example quizzes, you can omit the `--recurse-submodules` flag: ```git clone https://github.com/hermonochy/QuizMaster```
    
  2. Enter the directory containing the game executable:
     ```sh
     cd QuizMasterTerminal
     ```
+
  3. Download fuzzywuzzy:
     ```sh
     pip install fuzzywuzzy
