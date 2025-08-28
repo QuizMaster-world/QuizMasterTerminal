@@ -25,18 +25,18 @@ class MakeQuizScreen(Screen):
         self.quiz_title = ""
         self.quiz_filename = ""
 
-    def compose(self) -> ComposeResult:
+    def compose(self):
         yield Header()
         yield Static("Quiz Creator", id="heading")
+        yield ListView(id="qlist")
         yield Button("Load Quiz", id="load")
         yield Button("Add Question", id="addq")
         yield Button("Edit Question", id="editq")
         yield Button("Save Quiz", id="save")
-        yield ListView(id="qlist")
         yield Button("Back", id="back")
         yield Footer()
 
-    def on_button_pressed(self, event: Button.Pressed) -> None:
+    def on_button_pressed(self, event: Button.Pressed):
         if event.button.id == "back":
             self.app.pop_screen()
         elif event.button.id == "load":
@@ -76,7 +76,7 @@ class LoadQuizScreen(Screen):
         super().__init__()
         self._owner = owner
 
-    def compose(self) -> ComposeResult:
+    def compose(self):
         yield Header()
         yield Static("Enter search term for quiz to load:")
         yield Input(placeholder="Search...", id="search")
@@ -84,7 +84,7 @@ class LoadQuizScreen(Screen):
         yield Button("Back", id="back")
         yield Footer()
 
-    async def on_input_submitted(self, event: Input.Submitted) -> None:
+    async def on_input_submitted(self, event: Input.Submitted):
         search_term = event.value.strip()
         quizfiles = glob('./Quizzes/**/*.json', recursive=True)
         results = []
@@ -102,7 +102,7 @@ class LoadQuizScreen(Screen):
                 item.data = {"file": file}
                 quizlist.append(item)
 
-    def on_list_view_selected(self, event: ListView.Selected) -> None:
+    def on_list_view_selected(self, event: ListView.Selected):
         if not hasattr(event.item, "data") or not isinstance(event.item.data, dict):
             return
         file = event.item.data.get("file")
@@ -111,7 +111,7 @@ class LoadQuizScreen(Screen):
             self._owner.set_questions_and_title(questions, title)
             self.app.pop_screen()
 
-    def on_button_pressed(self, event: Button.Pressed) -> None:
+    def on_button_pressed(self, event: Button.Pressed):
         if event.button.id == "back":
             self.app.pop_screen()
 
@@ -120,7 +120,7 @@ class AddQuestionScreen(Screen):
         super().__init__()
         self._owner = owner
 
-    def compose(self) -> ComposeResult:
+    def compose(self):
         yield Header()
         yield Static("Add a New Question")
         yield Input(placeholder="Question...", id="question")
@@ -130,7 +130,7 @@ class AddQuestionScreen(Screen):
         yield Button("Back", id="back")
         yield Footer()
 
-    def on_button_pressed(self, event: Button.Pressed) -> None:
+    def on_button_pressed(self, event: Button.Pressed):
         if event.button.id == "add":
             question = self.query_one("#question", Input).value.strip()
             correct = self.query_one("#correct", Input).value.strip()
@@ -150,7 +150,7 @@ class EditQuestionScreen(Screen):
         self._qidx = qidx
         self._original = question
 
-    def compose(self) -> ComposeResult:
+    def compose(self):
         yield Header()
         yield Static("Edit Question")
         yield Input(value=self._original.question, placeholder="Question...", id="question")
@@ -160,7 +160,7 @@ class EditQuestionScreen(Screen):
         yield Button("Back", id="back")
         yield Footer()
 
-    def on_button_pressed(self, event: Button.Pressed) -> None:
+    def on_button_pressed(self, event: Button.Pressed):
         if event.button.id == "save":
             question = self.query_one("#question", Input).value.strip()
             correct = self.query_one("#correct", Input).value.strip()
@@ -178,7 +178,7 @@ class SaveQuizScreen(Screen):
         super().__init__()
         self._owner = owner
 
-    def compose(self) -> ComposeResult:
+    def compose(self):
         yield Header()
         yield Static("Save Quiz")
         yield Input(placeholder="Quiz title...", id="title")
@@ -187,7 +187,7 @@ class SaveQuizScreen(Screen):
         yield Button("Back", id="back")
         yield Footer()
 
-    def on_button_pressed(self, event: Button.Pressed) -> None:
+    def on_button_pressed(self, event: Button.Pressed):
         if event.button.id == "save":
             title = self.query_one("#title", Input).value.strip()
             filename = self.query_one("#filename", Input).value.strip()

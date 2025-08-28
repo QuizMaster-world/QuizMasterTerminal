@@ -11,22 +11,24 @@ from textual.app import App, ComposeResult
 from textual.widgets import (
     Header, Footer, Button, Static, Input, ListView, ListItem, Label
 )
-from textual.containers import Vertical
+from textual.containers import Vertical, Center
 from textual.screen import Screen
 
 from quiz import *
 from quizcreator import *
 
 class MainMenu(Screen):
-    def compose(self) -> ComposeResult:
+    def compose(self):
         yield Header()
-        yield Static("Welcome to QuizMasterTerminal!", id="heading")
-        yield Button("Play a Quiz", id="play")
-        yield Button("Make a Quiz", id="make")
-        yield Button("Quit", id="quit")
+        with Center():
+            with Vertical(id="menu-vertical"):
+                yield Static("Welcome to QuizMasterTerminal!", id="heading")
+                yield Button("Play a Quiz", id="play")
+                yield Button("Make a Quiz", id="make")
+                yield Button("Quit", id="quit")
         yield Footer()
 
-    def on_button_pressed(self, event: Button.Pressed) -> None:
+    def on_button_pressed(self, event: Button.Pressed):
         if event.button.id == "play":
             self.app.push_screen(QuizSearchScreen())
         elif event.button.id == "make":
@@ -36,12 +38,52 @@ class MainMenu(Screen):
 
 class QuizMaster(App):
     CSS = """
-    #heading { text-align: center; margin-bottom: 1; }
-    #quiztitle { text-style: bold; }
-    #question { margin-top: 1; }
-    #answers { margin-top: 1; }
-    #qlist { height: 8; }
+    #heading {
+        text-align: center;
+        margin-bottom: 2;
+        color: cyan;
+        text-style: bold;
+        background: black;
+        height: 3;
+        content-align: center middle;
+        border: heavy $accent;
+    }
+    #menu-vertical {
+        width: 50;
+        height: 24;
+        padding: 2 4;
+        margin-top: 5;
+        background: $panel;
+        border: thick $accent;
+        content-align: center middle;
+        align-horizontal: center;
+    }
+    Button {
+        width: 100%;
+        min-width: 25;
+        max-width: 50;
+        height: 3;
+        margin-top: 2;
+        content-align: center middle;
+        text-align: center;
+        text-style: bold;
+        color: $text;
+        border: round $primary;
+        transition: background 300ms, color 300ms;
+    }
+    Button:hover {
+        background: $accent;
+        color: $panel;
+    }
+    #quiztitle {
+        text-style: bold;
+    }
+    #qlist {
+        height: 15;
+    }
     """
+
+    BINDINGS = [("q", "quit", "Quit"), ("b", "back", "Back")]
 
     def on_mount(self):
         self.push_screen(MainMenu())

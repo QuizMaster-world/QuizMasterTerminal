@@ -19,7 +19,7 @@ from textual.screen import Screen
 from modules.persistence import QuizQuestion, search_str_in_file, load_quiz
 
 class QuizSearchScreen(Screen):
-    def compose(self) -> ComposeResult:
+    def compose(self):
         yield Header()
         yield Static("Enter search term for quizzes:")
         yield Input(placeholder="Search...", id="search")
@@ -27,7 +27,7 @@ class QuizSearchScreen(Screen):
         yield Button("Back", id="back")
         yield Footer()
 
-    async def on_input_submitted(self, event: Input.Submitted) -> None:
+    async def on_input_submitted(self, event: Input.Submitted):
         search_term = event.value.strip()
         quizfiles = glob('./Quizzes/**/*.json', recursive=True)
         results = []
@@ -45,14 +45,14 @@ class QuizSearchScreen(Screen):
                 item.data = {"file": file}
                 quizlist.append(item)
 
-    def on_list_view_selected(self, event: ListView.Selected) -> None:
+    def on_list_view_selected(self, event: ListView.Selected):
         if not hasattr(event.item, "data") or not isinstance(event.item.data, dict):
             return
         file = event.item.data.get("file")
         if file:
             self.app.push_screen(PlayQuizScreen(file))
 
-    def on_button_pressed(self, event: Button.Pressed) -> None:
+    def on_button_pressed(self, event: Button.Pressed):
         if event.button.id == "back":
             self.app.pop_screen()
             
@@ -66,12 +66,11 @@ class PlayQuizScreen(Screen):
         self.score = 0
         self.answer_buttons = []
 
-    def compose(self) -> ComposeResult:
+    def compose(self):
         self.questions, self.title = load_quiz(self.quizfile)
         self.current = 0
         self.score = 0
         yield Header()
-        yield Static(f"Quiz: {self.title}", id="quiztitle")
         self.qbox = Static("", id="question")
         yield self.qbox
         self.abox = Vertical(id="answers")
@@ -88,7 +87,7 @@ class PlayQuizScreen(Screen):
             self.abox.remove_children()
             return
         q = self.questions[self.current]
-        self.qbox.update(f"Question {self.current+1}: {q.question}")
+        self.qbox.update(f"Question {self.current+1}/{len(self.questions)}: {q.question}")
         answers = random.sample([q.correctAnswer] + q.wrongAnswers, len(q.wrongAnswers)+1)
         self.abox.remove_children()
         self.answer_buttons = []
@@ -98,7 +97,7 @@ class PlayQuizScreen(Screen):
             self.abox.mount(btn)
             self.answer_buttons.append(btn)
 
-    def on_button_pressed(self, event: Button.Pressed) -> None:
+    def on_button_pressed(self, event: Button.Pressed):
         if event.button.id == "back":
             self.app.pop_screen()
         elif event.button.id and event.button.id.startswith("answer_"):
