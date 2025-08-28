@@ -44,13 +44,13 @@ class QuizMaster(App):
         color: cyan;
         text-style: bold;
         background: black;
-        height: 3;
+        height: 5;
         content-align: center middle;
         border: heavy $accent;
     }
     #menu-vertical {
         width: 50;
-        height: 24;
+        height: 26;
         padding: 2 4;
         margin-top: 5;
         background: $panel;

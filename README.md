@@ -2,6 +2,8 @@
 
 QuizMasterTerminal is a terminal-based version of [QuizMaster](https://github.com/hermonochy/QuizMaster), using Textual for its UI. QuizMasterTerminal allows users to create and play quizzes directly from the terminal. It is ideal for environments where graphical interfaces are not available or desired.
 
+![](images/QuizMaster.svg)
+
 ## How to Use
 
 ### Installation
@@ -20,7 +22,7 @@ QuizMasterTerminal is a terminal-based version of [QuizMaster](https://github.co
     pip install -r requirements.txt
     ```   
 
-4. Start QuizMasterTerminal!.
+4. Start playing!.
 
 ## Playing
 
@@ -29,8 +31,8 @@ QuizMasterTerminal is a terminal-based version of [QuizMaster](https://github.co
 
 ## Features
 
-- **Play a Quiz:** Select and play quizzes from JSON files.
-- **Make a Quiz:** Create, edit, and save quizzes in JSON format.
+- **Play a Quiz:** Select and play quizzes.
+- **Make a Quiz:** Create, edit, and save quizzes.
 - **TUI Window:** All interactions are handled through the TUI.
 
 Enjoy creating and playing quizzes with QuizMasterTerminal!
