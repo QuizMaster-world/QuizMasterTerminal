@@ -9,110 +9,102 @@ from fuzzywuzzy import fuzz
 from dataclasses import dataclass, field
 from typing import List, Tuple
 
+from textual.app import App, ComposeResult
+from textual.widgets import (
+    Header, Footer, Button, Static, Input, ListView, ListItem, Label
+)
+from textual.containers import Vertical
+from textual.screen import Screen
 
-@dataclass
-class QuizQuestion:
-    question: str
-    correctAnswer: str
-    wrongAnswers: List[str]
-    timeout: int = field(default=10)
+from modules.persistence import QuizQuestion, search_str_in_file, load_quiz
 
-    def __repr__(self):
-        return self.question
+class QuizSearchScreen(Screen):
+    def compose(self) -> ComposeResult:
+        yield Header()
+        yield Static("Enter search term for quizzes:")
+        yield Input(placeholder="Search...", id="search")
+        yield ListView(id="quizlist")
+        yield Button("Back", id="back")
+        yield Footer()
 
-def sprint(str):
-   for c in str + '\n':
-     sys.stdout.write(c)
-     sys.stdout.flush()
-     time.sleep(3./90)
-
-def search_str_in_file(file_path, word):
-    with open(file_path, 'r', errors="ignore") as file:
-        content = file.read().lower()
-        words = content.split()
-
-        if word.lower() in content:
-            return file_path
-        
-        for w in words:
-            if fuzz.ratio(w, word.lower()) > 80:
-                return file_path
-
-def load_quiz(filename: str) -> Tuple[List[QuizQuestion], str]:
-    with open(filename, 'r') as file:
-        quizDicts = json.load(file)
-        questionList = []
-        for q in quizDicts["listOfQuestions"]:
-            qq = QuizQuestion(**q)
-            questionList.append(qq)
-        titleofquiz = quizDicts["title"]
-    return questionList, titleofquiz
-
-def main():
-    sprint("\nWelcome to QuizMaster Terminal")
-    while True:
-        sprint("\n1. Play a Quiz")
-        sprint("2. Make a Quiz")
-        sprint("3. Quit")
-        choice = input("Enter choice: ").lower()
-
-        if choice == "3" or choice == "quit" or choice == "q" or choice == "3. quit":
-            break
-        elif choice == "2" or choice == "make" or choice == "make a quiz" or choice == "2. make a quiz":
-            os.system("python3 quizcreator.py")
-        elif choice == "1" or choice == "play" or choice == "play a quiz" or choice == "1. play a quiz":
-            searchTerm = input("Enter search term for quizzes: ").lower()
-            quizfiles = glob('./Quizzes/**/*.json', recursive=True)
-            quizfileSearchResults = []
-            for file in quizfiles:
-                if search_str_in_file(file, searchTerm):
-                    quizfileSearchResults.append(file)
-
-            if not quizfileSearchResults:
-                sprint("No quizzes found.")
-                continue
-
-            sprint("Search Results:")
-            for idx, file in enumerate(quizfileSearchResults):
+    async def on_input_submitted(self, event: Input.Submitted) -> None:
+        search_term = event.value.strip()
+        quizfiles = glob('./Quizzes/**/*.json', recursive=True)
+        results = []
+        for file in quizfiles:
+            if search_str_in_file(file, search_term):
+                results.append(file)
+        quizlist = self.query_one("#quizlist", ListView)
+        quizlist.clear()
+        if not results:
+            quizlist.append(ListItem(Label("No quizzes found."), id="none"))
+        else:
+            for idx, file in enumerate(results):
                 _, title = load_quiz(file)
-                sprint(f"{idx + 1}. {title}")
-            try:
-              quiz_choice = int(input("Enter the number of the quiz you want to play: ")) - 1
-            except ValueError:
-                sprint("Invalid choice.")
-                continue
+                item = ListItem(Label(f"{title}"), id=f"quiz_{idx}")
+                item.data = {"file": file}
+                quizlist.append(item)
 
-            filename = quizfileSearchResults[quiz_choice]
-            questions, title = load_quiz(filename)
-            question_index = 0
-            score = 0
+    def on_list_view_selected(self, event: ListView.Selected) -> None:
+        if not hasattr(event.item, "data") or not isinstance(event.item.data, dict):
+            return
+        file = event.item.data.get("file")
+        if file:
+            self.app.push_screen(PlayQuizScreen(file))
 
-            while question_index < len(questions):
-                current_question = questions[question_index]
-                correct_answer = current_question.correctAnswer
-                wrong_answers = current_question.wrongAnswers
-                answers = random.sample([correct_answer] + wrong_answers, len(wrong_answers) + 1)
+    def on_button_pressed(self, event: Button.Pressed) -> None:
+        if event.button.id == "back":
+            self.app.pop_screen()
+            
+class PlayQuizScreen(Screen):
+    def __init__(self, quizfile):
+        super().__init__()
+        self.quizfile = quizfile
+        self.questions = []
+        self.title = ""
+        self.current = 0
+        self.score = 0
+        self.answer_buttons = []
 
-                sprint(f"\nQuestion: {current_question.question}")
-                for i, answer in enumerate(answers):
-                    sprint(f"{i+1}. {answer}")
-                
-                while True:
-                    user_answer = input("Select the correct answer: ")
+    def compose(self) -> ComposeResult:
+        self.questions, self.title = load_quiz(self.quizfile)
+        self.current = 0
+        self.score = 0
+        yield Header()
+        yield Static(f"Quiz: {self.title}", id="quiztitle")
+        self.qbox = Static("", id="question")
+        yield self.qbox
+        self.abox = Vertical(id="answers")
+        yield self.abox
+        yield Button("Back", id="back")
+        yield Footer()
 
-                    if user_answer.isdigit() and 1 <= int(user_answer) <= len(answers):
-                        if answers[int(user_answer) - 1] == correct_answer:
-                            score += 1
-                        break
-                    else:
-                        sprint("Invalid choice. Please select a valid answer.")
+    def on_mount(self):
+        self.update_question()
 
-                question_index += 1
+    def update_question(self):
+        if self.current >= len(self.questions):
+            self.qbox.update(f"Quiz completed! Your score: {self.score}/{len(self.questions)}")
+            self.abox.remove_children()
+            return
+        q = self.questions[self.current]
+        self.qbox.update(f"Question {self.current+1}: {q.question}")
+        answers = random.sample([q.correctAnswer] + q.wrongAnswers, len(q.wrongAnswers)+1)
+        self.abox.remove_children()
+        self.answer_buttons = []
+        for idx, ans in enumerate(answers):
+            btn = Button(ans, id=f"answer_{self.current}_{idx}")
+            btn.data = {"correct": ans == q.correctAnswer}
+            self.abox.mount(btn)
+            self.answer_buttons.append(btn)
 
-                if question_index >= len(questions):
-                    sprint(f"Quiz completed! Your score: {score}/{len(questions)}")
+    def on_button_pressed(self, event: Button.Pressed) -> None:
+        if event.button.id == "back":
+            self.app.pop_screen()
+        elif event.button.id and event.button.id.startswith("answer_"):
+            correct = event.button.data.get("correct", False)
+            if correct:
+                self.score += 1
+            self.current += 1
+            self.update_question()
 
-    sprint("Goodbye!")
-
-if __name__ == "__main__":
-    main()

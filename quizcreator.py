@@ -1,140 +1,200 @@
 #!/usr/bin/env python3
+import os
 import json
 import sys
 import time
-from glob import glob
-from fuzzywuzzy import fuzz
-from dataclasses import dataclass, field
+
 from typing import List
+from dataclasses import dataclass, asdict, field
 
-@dataclass
-class QuizQuestion:
-    question: str
-    correctAnswer: str
-    wrongAnswers: List[str]
-    timeout: int = field(default=15)
+from fuzzywuzzy import fuzz
+from glob import glob
+from textual.app import App, ComposeResult
+from textual.widgets import (
+    Header, Footer, Button, Static, Input, ListView, ListItem, Label
+)
+from textual.containers import Vertical
+from textual.screen import Screen
 
-    def __repr__(self):
-        return self.question
+from modules.persistence import *
 
-questionList = []
+class MakeQuizScreen(Screen):
+    def __init__(self):
+        super().__init__()
+        self.questions: List[QuizQuestion] = []
+        self.quiz_title = ""
+        self.quiz_filename = ""
 
-def sprint(str):
-   for c in str + '\n':
-     sys.stdout.write(c)
-     sys.stdout.flush()
-     time.sleep(3./90)
+    def compose(self) -> ComposeResult:
+        yield Header()
+        yield Static("Quiz Creator", id="heading")
+        yield Button("Load Quiz", id="load")
+        yield Button("Add Question", id="addq")
+        yield Button("Edit Question", id="editq")
+        yield Button("Save Quiz", id="save")
+        yield ListView(id="qlist")
+        yield Button("Back", id="back")
+        yield Footer()
 
-def search_str_in_file(file_path, word):
-    with open(file_path, 'r', errors="ignore") as file:
-        content = file.read().lower()
-        words = content.split()
+    def on_button_pressed(self, event: Button.Pressed) -> None:
+        if event.button.id == "back":
+            self.app.pop_screen()
+        elif event.button.id == "load":
+            self.app.push_screen(LoadQuizScreen(self))
+        elif event.button.id == "addq":
+            self.app.push_screen(AddQuestionScreen(self))
+        elif event.button.id == "editq":
+            qlist = self.query_one("#qlist", ListView)
+            idx = qlist.index
+            if idx is not None and 0 <= idx < len(self.questions):
+                question = self.questions[idx]
+                self.app.push_screen(EditQuestionScreen(self, idx, question))
+        elif event.button.id == "save":
+            self.app.push_screen(SaveQuizScreen(self))
 
-        if word.lower() in content:
-            return file_path
+    def add_question(self, question: QuizQuestion):
+        self.questions.append(question)
+        self.refresh_list()
         
-        for w in words:
-            if fuzz.ratio(w, word.lower()) > 80:
-                return file_path
+    def edit_question(self, idx, question: QuizQuestion):
+        self.questions[idx] = question
+        self.refresh_list()
 
-def load_quiz(filename: str) -> List[QuizQuestion]:
-    with open(filename, 'r') as file:
-        quizDicts = json.load(file)
-        questionList = []
-        for q in quizDicts["listOfQuestions"]:
-            qq = QuizQuestion(**q)
-            questionList.append(qq)
-    return questionList
+    def set_questions_and_title(self, questions, title):
+        self.questions = questions
+        self.quiz_title = title
+        self.refresh_list()
 
-def view_all_questions():
-    if not questionList:
-        sprint("\nNo questions available.")
-        return
-    for idx, question in enumerate(questionList):
-        sprint(f"\n{idx+1}. {question.question}")
+    def refresh_list(self):
+        qlist = self.query_one("#qlist", ListView)
+        qlist.clear()
+        for idx, q in enumerate(self.questions):
+            qlist.append(ListItem(Label(f"{idx+1}. {q.question}")))
 
-def main():
-    sprint("\nQuiz Creator")
-    while True:
-        sprint("\n1. Open Quiz")
-        sprint("2. Save Quiz")
-        sprint("3. Add Question")
-        sprint("4. Edit Question")
-        sprint("5. Delete Question")
-        sprint("6. View All Questions")
-        sprint("7. Quit")
-        choice = input("Enter choice: ").lower()
+class LoadQuizScreen(Screen):
+    def __init__(self, owner):
+        super().__init__()
+        self._owner = owner
 
-        if choice in ["7","quit","q","7. quit"]:
-            break
-        elif choice in ["1","open","open quiz","o","1. open quiz"]:
-            searchTerm = input("Enter search term for quizzes: ").lower()
-            quizfiles = glob('./Quizzes/**/*.json', recursive=True)
-            quizfileSearchResults = []
-            for file in quizfiles:
-                if search_str_in_file(file, searchTerm):
-                    quizfileSearchResults.append(file)
+    def compose(self) -> ComposeResult:
+        yield Header()
+        yield Static("Enter search term for quiz to load:")
+        yield Input(placeholder="Search...", id="search")
+        yield ListView(id="quizlist")
+        yield Button("Back", id="back")
+        yield Footer()
 
-            if not quizfileSearchResults:
-                sprint("No quizzes found.")
-                continue
+    async def on_input_submitted(self, event: Input.Submitted) -> None:
+        search_term = event.value.strip()
+        quizfiles = glob('./Quizzes/**/*.json', recursive=True)
+        results = []
+        for file in quizfiles:
+            if search_str_in_file(file, search_term):
+                results.append(file)
+        quizlist = self.query_one("#quizlist", ListView)
+        quizlist.clear()
+        if not results:
+            quizlist.append(ListItem(Label("No quizzes found."), id="none"))
+        else:
+            for idx, file in enumerate(results):
+                _, title = load_quiz(file)
+                item = ListItem(Label(f"{title}"), id=f"quiz_{idx}")
+                item.data = {"file": file}
+                quizlist.append(item)
 
-            sprint("Search Results:")
-            for idx, file in enumerate(quizfileSearchResults):
-                with open(file, 'r') as f:
-                    quizDicts = json.load(f)
-                    title = quizDicts["title"]
-                sprint(f"{idx + 1}. {title}")
+    def on_list_view_selected(self, event: ListView.Selected) -> None:
+        if not hasattr(event.item, "data") or not isinstance(event.item.data, dict):
+            return
+        file = event.item.data.get("file")
+        if file:
+            questions, title = load_quiz(file)
+            self._owner.set_questions_and_title(questions, title)
+            self.app.pop_screen()
 
-            quiz_choice = int(input("Enter the number of the quiz you want to open: ")) - 1
-            if quiz_choice < 0 or quiz_choice >= len(quizfileSearchResults):
-                sprint("Invalid choice.")
-                continue
+    def on_button_pressed(self, event: Button.Pressed) -> None:
+        if event.button.id == "back":
+            self.app.pop_screen()
 
-            filename = quizfileSearchResults[quiz_choice]
-            with open(filename, 'r') as file:
-                quizDicts = json.load(file)
-                questionList.clear()
-                for q in quizDicts["listOfQuestions"]:
-                    qq = QuizQuestion(**q)
-                    questionList.append(qq)
-                sprint("Quiz loaded successfully.")
-                view_all_questions()
-        elif choice in ["2","save","save quiz","s","2. save quiz"]:
-            filename = ("Quizzes/" + input("Enter the filename to save the quiz (path to .json): "))
-            with open(filename, 'w') as file:
-                quiz_name = input("Enter the title of the quiz: ")
-                savedData = {"title": quiz_name, "listOfQuestions": questionList}
-                json.dump(savedData, file, default=vars)
-                sprint("Quiz saved successfully.")
-        elif choice in ["3","add","add question","a","3. add question"]:
-            question = input("Enter the question: ")
-            correct_answer = input("Enter the correct answer: ")
-            wrong_answers = input("Enter the wrong answers (comma-separated): ").split(',')
-            new_question = QuizQuestion(question, correct_answer, wrong_answers)
-            questionList.append(new_question)
-            sprint("Question added successfully.")
-        elif choice in ["4","edit","edit question","e","4. edit question"]:
-            index = int(input("Enter the number of the question to edit: ")) - 1
-            if 0 <= index < len(questionList):
-                question = input("Enter the new question: ")
-                correct_answer = input("Enter the new correct answer: ")
-                wrong_answers = input("Enter the new wrong answers (comma-separated): ").split(',')
-                questionList[index] = QuizQuestion(question, correct_answer, wrong_answers)
-                sprint("Question edited successfully.")
-            else:
-                sprint("Invalid index.")
-        elif choice == "5" or choice == "delete" or choice == "delete question" or choice == "d":
-            index = int(input("Enter the index of the question to delete: "))
-            if 0 <= index < len(questionList):
-                questionList.pop(index)
-                sprint("Question deleted successfully.")
-            else:
-                sprint("Invalid index.")
-        elif choice == "6" or choice == "view" or choice == "view all questions" or choice == "v":
-            view_all_questions()
+class AddQuestionScreen(Screen):
+    def __init__(self, owner):
+        super().__init__()
+        self._owner = owner
 
-    sprint("Goodbye!")
+    def compose(self) -> ComposeResult:
+        yield Header()
+        yield Static("Add a New Question")
+        yield Input(placeholder="Question...", id="question")
+        yield Input(placeholder="Correct answer...", id="correct")
+        yield Input(placeholder="Wrong answers (comma separated)...", id="wrong")
+        yield Button("Add", id="add")
+        yield Button("Back", id="back")
+        yield Footer()
 
-if __name__ == "__main__":
-    main()
+    def on_button_pressed(self, event: Button.Pressed) -> None:
+        if event.button.id == "add":
+            question = self.query_one("#question", Input).value.strip()
+            correct = self.query_one("#correct", Input).value.strip()
+            wrong = self.query_one("#wrong", Input).value.strip()
+            if question and correct and wrong:
+                wrong_answers = [a.strip() for a in wrong.split(",") if a.strip()]
+                q = QuizQuestion(question, correct, wrong_answers)
+                self._owner.add_question(q)
+                self.app.pop_screen()
+        elif event.button.id == "back":
+            self.app.pop_screen()
+
+class EditQuestionScreen(Screen):
+    def __init__(self, owner, qidx, question: QuizQuestion):
+        super().__init__()
+        self._owner = owner
+        self._qidx = qidx
+        self._original = question
+
+    def compose(self) -> ComposeResult:
+        yield Header()
+        yield Static("Edit Question")
+        yield Input(value=self._original.question, placeholder="Question...", id="question")
+        yield Input(value=self._original.correctAnswer, placeholder="Correct answer...", id="correct")
+        yield Input(value=", ".join(self._original.wrongAnswers), placeholder="Wrong answers (comma separated)...", id="wrong")
+        yield Button("Save", id="save")
+        yield Button("Back", id="back")
+        yield Footer()
+
+    def on_button_pressed(self, event: Button.Pressed) -> None:
+        if event.button.id == "save":
+            question = self.query_one("#question", Input).value.strip()
+            correct = self.query_one("#correct", Input).value.strip()
+            wrong = self.query_one("#wrong", Input).value.strip()
+            if question and correct and wrong:
+                wrong_answers = [a.strip() for a in wrong.split(",") if a.strip()]
+                q = QuizQuestion(question, correct, wrong_answers)
+                self._owner.edit_question(self._qidx, q)
+                self.app.pop_screen()
+        elif event.button.id == "back":
+            self.app.pop_screen()
+
+class SaveQuizScreen(Screen):
+    def __init__(self, owner):
+        super().__init__()
+        self._owner = owner
+
+    def compose(self) -> ComposeResult:
+        yield Header()
+        yield Static("Save Quiz")
+        yield Input(placeholder="Quiz title...", id="title")
+        yield Input(placeholder="Filename (e.g., Quizzes/myquiz.json)", id="filename")
+        yield Button("Save", id="save")
+        yield Button("Back", id="back")
+        yield Footer()
+
+    def on_button_pressed(self, event: Button.Pressed) -> None:
+        if event.button.id == "save":
+            title = self.query_one("#title", Input).value.strip()
+            filename = self.query_one("#filename", Input).value.strip()
+            if title and filename:
+                save_quiz(filename, title, self._owner.questions)
+                self._owner.quiz_title = title
+                self._owner.quiz_filename = filename
+                self.app.pop_screen()
+        elif event.button.id == "back":
+            self.app.pop_screen()

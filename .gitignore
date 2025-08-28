@@ -1,0 +1,7 @@
+venv/
+.mypy_cache/
+None
+pyvenv.cfg
+modules/__pycache__/*
+__pycache__
+()

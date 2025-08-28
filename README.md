@@ -1,6 +1,6 @@
 # QuizMasterTerminal
 
-QuizMasterTerminal is a text-based terminal version of [QuizMaster](https://github.com/hermonochy/QuizMaster). QuizMasterTerminal allows users to create and play quizzes directly from the terminal. It is ideal for environments where graphical interfaces are not available or desired.
+QuizMasterTerminal is a terminal-based version of [QuizMaster](https://github.com/hermonochy/QuizMaster), using Textual for its UI. QuizMasterTerminal allows users to create and play quizzes directly from the terminal. It is ideal for environments where graphical interfaces are not available or desired.
 
 ## How to Use
 
@@ -15,30 +15,22 @@ QuizMasterTerminal is a text-based terminal version of [QuizMaster](https://gith
     cd QuizMasterTerminal
     ```
 
- 3. Download fuzzywuzzy:
+ 3. Download the requirements:
     ```sh
-    pip install fuzzywuzzy
+    pip install -r requirements.txt
     ```   
 
-4. Run either Quiz Creator or Quiz Game (see below).
+4. Start QuizMasterTerminal!.
 
-## Quiz Game
+## Playing
 
-1. In a command line window, enter `./quiz.py` for Linux, `python quiz.py` for Windows.
-2. Follow the prompts in the terminal to select a quiz file (JSON format).
-3. Answer the questions by typing the number corresponding to your choice.
-4. At the end, your score will be displayed.
-
-## Quiz Creator
-
-1. In a command line window, enter `./quizcreator.py` for Linux, `python quizcreator.py` for Windows.
-2. Follow the prompts to create, edit, or delete quiz questions.
-3. Save your quiz to a JSON file for use in the Quiz Game.
+1. In a command line window, enter `./QuizMaster` for Linux, `python QuizMaster` for Windows.
+2. Click on the desired button and follow the prompts to play or make your quiz!
 
 ## Features
 
 - **Play a Quiz:** Select and play quizzes from JSON files.
 - **Make a Quiz:** Create, edit, and save quizzes in JSON format.
-- **Text-Based Interaction:** All interactions are handled through the terminal for simplicity and compatibility with low-storage devices.
+- **TUI Window:** All interactions are handled through the TUI.
 
 Enjoy creating and playing quizzes with QuizMasterTerminal!
